@@ -12,11 +12,41 @@ namespace WaterProject.API.Controllers
         public WaterController(WaterDbContext temp) => _waterContext = temp;
 
         [HttpGet("AllProjects")]
-        public IEnumerable<Project> GetProjects()
+        public IActionResult GetProjects(int pageSize = 10, int pageNum = 1, [FromQuery] List<string>? projectTypes = null)
         {
-            var something = _waterContext.Projects.ToList();
+            string? favProjType = Request.Cookies["FavoriteProjectType"];
+            Console.WriteLine("~~~~~~~~~COOKIE~~~~~~~~~\n" + favProjType);
 
-            return something;
+            HttpContext.Response.Cookies.Append("FavoriteProjectType", "Protected Spring", new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTime.Now.AddMinutes(1),
+            });
+
+            var query = _waterContext.Projects.AsQueryable();
+
+            if (projectTypes != null && projectTypes.Any())
+            {
+                query = query.Where(p => projectTypes.Contains(p.ProjectType));
+            }
+
+            var totalNumProjects = query.Count();
+
+
+            var projectList = query
+                .Skip((pageNum - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            var someObject = new
+            {
+                Projects = projectList,
+                TotalNumProjects = totalNumProjects
+            };
+
+            return Ok(someObject);
         }
         [HttpGet("FunctionalProjects")]
         public IEnumerable<Project> GetFunctionalProjects()
@@ -24,6 +54,17 @@ namespace WaterProject.API.Controllers
             var something = _waterContext.Projects.Where(p => p.ProjectFunctionalityStatus == "Functional").ToList();
 
             return something;
+        }
+
+        [HttpGet("GetProjectTypes")]
+        public IActionResult GetProjectTypes ()
+        {
+            var projectTypes = _waterContext.Projects
+                .Select(p => p.ProjectType)
+                .Distinct()
+                .ToList();
+
+            return Ok(projectTypes);
         }
     }
 }
