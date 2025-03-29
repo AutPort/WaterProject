@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Project } from './types/Project';
+import { Project } from '../types/Project';
+import { useNavigate } from 'react-router-dom';
 
 function ProjectList({ selectedCategories }: { selectedCategories: string[] }) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [pageSize, setPageSize] = useState<number>(10);
   const [pageNum, setPageNum] = useState<number>(1);
-  const [totalItems, setTotalItems] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(0);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -22,7 +23,6 @@ function ProjectList({ selectedCategories }: { selectedCategories: string[] }) {
       );
       const data = await response.json();
       setProjects(data.projects); // has to match what is coming in from json!! (not what is written in the backend necessarily)
-      setTotalItems(data.totalNumProjects);
       setTotalPages(Math.max(1, Math.ceil(data.totalNumProjects / pageSize)));
     };
 
@@ -63,6 +63,13 @@ function ProjectList({ selectedCategories }: { selectedCategories: string[] }) {
                 {p.projectFunctionalityStatus}
               </li>
             </ul>
+
+            <button
+              className='btn btn-success'
+              onClick={() => navigate(`/donate/${p.projectName}/${p.projectId}`)}
+            >
+              Donate
+            </button>
           </div>
         </div>
       ))}
